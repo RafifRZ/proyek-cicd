@@ -140,8 +140,10 @@ jobs:
         env:
           APP_PORT: ${{ secrets.APP_PORT }}
         run: |
-          Start-Sleep -Seconds 3
-          $response = Invoke-WebRequest -Uri "http://localhost:$env:APP_PORT" -TimeoutSec 10
-          if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 400) {
-            throw "Health check failed with HTTP status $($response.StatusCode)."
+          if ($env:APP_PORT -notmatch '^\d+$') {
+            throw "APP_PORT is missing or is not a valid port number."
+          }
+          curl.exe --fail --silent --show-error --retry 5 --retry-connrefused --retry-delay 2 --max-time 10 --output NUL "http://127.0.0.1:$env:APP_PORT/"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Health check failed for http://127.0.0.1:$env:APP_PORT/."
           }
